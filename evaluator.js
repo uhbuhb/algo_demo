@@ -6,6 +6,7 @@ const trades = require('./output.json')
 const [balanceA, balanceB] = [{ cash: 0, position: 0 }, { cash: 0, position: 0 }]
 
 let lastTrade
+let totalPnL = 0
 
 while (trades.length) {
   let { time, actions } = trades.shift()
@@ -33,7 +34,9 @@ while (trades.length) {
 
   const a_pnl = balanceA.cash + balanceA.position * (balanceA.position > 0 ? bidA : askA)
   const b_pnl = balanceB.cash + balanceB.position * (balanceB.position > 0 ? bidB : askB)
+  totalPnL = totalPnL + a_pnl + b_pnl
 
-  console.log(`${time}: ${a_pnl} + ${b_pnl} = ${a_pnl + b_pnl}`)
+//  console.log(`${time}: ${a_pnl} + ${b_pnl} = ${a_pnl + b_pnl}, total: ${totalPnL}`)
+  console.log(`${time}: trade p&l: ${a_pnl + b_pnl}, total p&l: ${totalPnL}`)
 }
 
