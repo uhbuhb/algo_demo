@@ -2,8 +2,6 @@ import json
 import time
 
 import requests
-import websockets
-import asyncio
 import websocket
 
 REST_EP = 'https://ftx.com/api/'
@@ -27,7 +25,7 @@ def subscribe_to_markets(ws, markets):
         ws.send(json.dumps({'op': 'subscribe', 'channel': 'trades', 'market': market}))
 
 
-def process_received_data(ws):
+def iterate_data(ws):
     while True:
         response = json.loads(ws.recv())
         if response['type'] == 'subscribed':
@@ -36,20 +34,25 @@ def process_received_data(ws):
             continue
         if response['type'] == 'update':
             for response_data in response['data']:
-                print(
-                    f"{int(time.time())}, FTX, {response['market']}, {response_data['price']}, {response_data['size']}")
-        ws.send(json.dumps({'op': 'ping'}))
+                data = f"{int(time.time())}, FTX, {response['market']}, {response_data['price']}, {response_data['size']}"
+                ws.send(json.dumps({'op': 'ping'}))
+                yield data
 
 
-if __name__ == '__main__':
+def log_data():
     markets = get_markets()
 
     ws = websocket.WebSocket()
     ws.connect(f'{WS_EP}/markets')
     ws.send(json.dumps({'op': 'ping'}))
     msg = ws.recv()
-    # TODO: send_ping every 5 seconds on secondary thread
 
     subscribe_to_markets(ws, markets)
 
-    process_received_data(ws)
+    for data in iterate_data(ws):
+        print(data)
+
+
+if __name__ == '__main__':
+    log_data()
+

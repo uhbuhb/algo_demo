@@ -30,10 +30,14 @@ def process_received_data(ws):
                 print(f"keyerror on message: {data}")
 
 
-if __name__ == '__main__':
+def log_data():
     ws = websocket.WebSocket()
     ws.connect(f'{WS_EP}')
     msg = json.loads(ws.recv())
     assert msg['info'].startswith('Welcome')
     subscribe_to_markets(ws)
     process_received_data(ws)
+
+
+if __name__ == '__main__':
+    log_data()
