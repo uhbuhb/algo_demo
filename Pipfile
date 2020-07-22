@@ -7,6 +7,10 @@ verify_ssl = true
 
 [packages]
 pandas = "*"
+requests = "*"
+websockets = "*"
+aiohttp = "*"
+websocket = "*"
 
 [requires]
 python_version = "3.6"
