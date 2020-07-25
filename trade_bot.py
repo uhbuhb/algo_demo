@@ -1,3 +1,4 @@
+import collections
 import json
 import time
 from collections import OrderedDict
@@ -18,13 +19,15 @@ class TradeBot(object):
         self.trades = list()
 
     def write_trades(self):
-        with open(f'ori_trades_{int(time.time())%1000}.json', 'w') as outfile:
+        outfile_name = f'ori_trades_{int(time.time())%1000}.json'
+        with open(outfile_name, 'w') as outfile:
             json.dump(self.trades, outfile, indent=1)
+        return outfile_name
 
     def log_datapoint(self, prices):
         for asset, data in prices.items():
             if asset not in self.price_history.keys():
-                self.price_history[asset] = list()
+                self.price_history[asset] = collections.deque(maxlen=100)
             self.price_history[asset].append(data)
 
     def send_trade_command(self, actions, ts):
@@ -57,17 +60,17 @@ def rolling_avg_actions(self):
 
         bid_series = pd.Series([point['bid'] for point in self.price_history[asset]])
         windows = bid_series.rolling(window_size)
-        bid_moving_avgs = windows.mean().to_list()
+        bid_moving_avgs = windows.mean()
 
-        current_bma = bid_moving_avgs[-1]
-        prev_bma = bid_moving_avgs[-2]
+        current_bma = bid_moving_avgs.iloc[-1]
+        prev_bma = bid_moving_avgs.iloc[-2]
 
         ask_series = pd.Series([point['ask'] for point in self.price_history[asset]])
         windows = ask_series.rolling(window_size)
-        ask_moving_avgs = windows.mean().to_list()
+        ask_moving_avgs = windows.mean()
 
-        current_ama = ask_moving_avgs[-1]
-        prev_ama = ask_moving_avgs[-2]
+        current_ama = ask_moving_avgs.iloc[-1]
+        prev_ama = ask_moving_avgs.iloc[-2]
 
         flag = 0
         if current_ask > current_ama and prev_ask < prev_ama:  # we crossed above the MA
@@ -86,9 +89,11 @@ def rolling_avg_actions(self):
 if __name__ == '__main__':
     bot = TradeBot(rolling_avg_actions)
     data = load_data()
+    i = 0
+    start = time.time()
     for ts, prices in data.items():
-        if not ts % 10:
-            print(f"processing ts: {ts}")
+        print(f"Progress: {i/len(data)*100:.2f}%, elapsed: {time.time() - start:.2f}s")
         bot.make_trades(int(ts), prices)
-    bot.write_trades()
-    print("done")
+        i+=1
+    outfile = bot.write_trades()
+    print(f"done trading, oufile written: {outfile}")
